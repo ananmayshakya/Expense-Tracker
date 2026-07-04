@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/*
+ * Tailwind v4 has no JS `tailwind.config.js` by default — dark-mode variant
+ * selection is done in CSS via `@custom-variant` (see
+ * node_modules/next/dist/docs/01-app/01-getting-started/11-css.md for the
+ * v4 setup pattern, and node_modules/next-themes/README.md "With
+ * TailwindCSS" for why `attribute="class"` + a `.dark` selector variant is
+ * what next-themes needs). This makes `dark:` utilities respond to the
+ * `class="dark"` next-themes puts on <html>, instead of only responding to
+ * `prefers-color-scheme` (Tailwind v4's default when no variant is
+ * declared).
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,13 +23,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
