@@ -11,3 +11,98 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  role         Role     @default(USER)
+  currency     String   @default("USD")   // ISO 4217 code
+  theme        String   @default("system") // light | dark | system
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  categories        Category[]
+  expenses          Expense[]
+  budgets           Budget[]
+  recurringExpenses RecurringExpense[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#6b7280")
+  isDefault Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses          Expense[]
+  budgets           Budget[]
+  recurringExpenses RecurringExpense[]
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  amount      Decimal   @db.Decimal(12, 2)
+  description String
+  date        DateTime
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([date])
+}
+
+model Budget {
+  id         String    @id @default(cuid())
+  amount     Decimal   @db.Decimal(12, 2)
+  month      Int       // 1-12
+  year       Int
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String?   // null = overall monthly budget
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId])
+}
+
+model RecurringExpense {
+  id          String              @id @default(cuid())
+  amount      Decimal             @db.Decimal(12, 2)
+  description String
+  frequency   RecurrenceFrequency
+  nextRunDate DateTime
+  active      Boolean             @default(true)
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([userId])
+}
