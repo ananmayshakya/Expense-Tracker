@@ -44,3 +44,83 @@ export const categorySchema = z.object({
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;
+
+/**
+ * Shared schema for Expense create/edit (§9.2, §10 money discipline).
+ * Reused by the server actions in `src/actions/expenses.ts` and by the
+ * client form via @hookform/resolvers/zod.
+ *
+ * `amount` accepts string or number from the client (forms serialize to
+ * strings; programmatic callers may pass a number), and is constrained to
+ * what fits in a `Decimal(12,2)` column: > 0, at most 2 decimal places,
+ * and <= 9,999,999,999.99. Money math itself is done with `Prisma.Decimal`
+ * in `lib/money.ts` — this schema only validates shape/range.
+ */
+const MAX_AMOUNT = 9_999_999_999.99;
+
+export const expenseSchema = z.object({
+  amount: z
+    .union([z.string(), z.number()])
+    .transform((val, ctx) => {
+      const num = typeof val === "string" ? Number(val.trim()) : val;
+      if (typeof val === "string" && val.trim() === "") {
+        ctx.addIssue({ code: "custom", message: "Amount is required." });
+        return z.NEVER;
+      }
+      if (!Number.isFinite(num)) {
+        ctx.addIssue({ code: "custom", message: "Amount must be a valid number." });
+        return z.NEVER;
+      }
+      return num;
+    })
+    .pipe(
+      z
+        .number()
+        .gt(0, { error: "Amount must be greater than zero." })
+        .max(MAX_AMOUNT, { error: "Amount is too large." })
+        .refine(
+          (num) => {
+            // At most 2 decimal places. Use string round-trip to avoid
+            // float artifacts like 1.005 -> 1.00499999999999989...
+            const [, decimals] = num.toString().split(".");
+            return !decimals || decimals.length <= 2;
+          },
+          { error: "Amount can have at most 2 decimal places." }
+        )
+    ),
+  description: z
+    .string()
+    .trim()
+    .min(1, { error: "Description is required." })
+    .max(200, { error: "Description must be 200 characters or fewer." }),
+  date: z.coerce.date({ error: "Please enter a valid date." }),
+  categoryId: z.string().trim().min(1).nullable().optional(),
+});
+
+export type ExpenseInput = z.infer<typeof expenseSchema>;
+
+/**
+ * The PRE-transform/coercion shape (what raw form inputs produce: `amount`
+ * as a string, `date` as whatever `z.coerce.date()` accepts e.g. a date
+ * string). Use this as the react-hook-form field type; `ExpenseInput`
+ * (above) is what the resolver produces after validation/transform, which
+ * is what `handleSubmit`'s callback receives.
+ */
+export type ExpenseFormInput = z.input<typeof expenseSchema>;
+
+/**
+ * Filters + sort for the expenses list (§9.2). Parsed server-side from URL
+ * search params so filtering/sorting is shareable and always applied via
+ * Prisma `where`/`orderBy` — never trust the client to have already
+ * filtered anything.
+ */
+export const expenseFilterSchema = z.object({
+  categoryIds: z.array(z.string()).optional(),
+  dateFrom: z.coerce.date().optional(),
+  dateTo: z.coerce.date().optional(),
+  search: z.string().trim().max(200).optional(),
+  sortBy: z.enum(["date", "amount"]).default("date"),
+  sortDir: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export type ExpenseFilterInput = z.infer<typeof expenseFilterSchema>;

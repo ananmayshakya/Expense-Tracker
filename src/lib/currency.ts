@@ -1,0 +1,48 @@
+/**
+ * Currency helpers (PLAN.md §10).
+ *
+ * Store ISO 4217 codes only (`User.currency`); never hardcode symbols or
+ * decimal-place counts — `Intl.NumberFormat` derives both correctly per
+ * currency (e.g. JPY has 0 decimal places, USD/EUR have 2).
+ */
+
+export type SupportedCurrency = {
+  code: string;
+  label: string;
+};
+
+/**
+ * Extensible list of supported currencies. Adding a new ISO 4217 code here
+ * is the only change needed to support it — `formatMoney` derives symbol
+ * and decimal formatting from `Intl.NumberFormat`.
+ */
+export const SUPPORTED_CURRENCIES: SupportedCurrency[] = [
+  { code: "USD", label: "US Dollar ($)" },
+  { code: "EUR", label: "Euro (€)" },
+  { code: "GBP", label: "British Pound (£)" },
+  { code: "JPY", label: "Japanese Yen (¥)" },
+  { code: "INR", label: "Indian Rupee (₹)" },
+  { code: "CAD", label: "Canadian Dollar ($)" },
+  { code: "AUD", label: "Australian Dollar ($)" },
+  { code: "CNY", label: "Chinese Yuan (¥)" },
+];
+
+export const SUPPORTED_CURRENCY_CODES = SUPPORTED_CURRENCIES.map((c) => c.code);
+
+/**
+ * Formats a raw amount (number or numeric string — e.g. a serialized
+ * Decimal) as money in the given ISO 4217 currency code. Symbol and decimal
+ * digit count come from `Intl.NumberFormat`, never hardcoded, so e.g. JPY
+ * renders with 0 decimals and USD/EUR with 2.
+ */
+export function formatMoney(amount: number | string, currencyCode: string): string {
+  const numeric = typeof amount === "string" ? Number(amount) : amount;
+  if (!Number.isFinite(numeric)) {
+    throw new Error(`formatMoney: amount is not a finite number (${amount})`);
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: currencyCode,
+  }).format(numeric);
+}
