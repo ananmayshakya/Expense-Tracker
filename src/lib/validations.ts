@@ -25,3 +25,22 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+/**
+ * Shared schema for Category create/edit (§9.3). Reused by the server
+ * actions in `src/actions/categories.ts` and by the client form via
+ * @hookform/resolvers/zod.
+ */
+export const categorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: "Name is required." })
+    .max(40, { error: "Name must be 40 characters or fewer." }),
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, { error: "Color must be a hex value like #6b7280." }),
+});
+
+export type CategoryInput = z.infer<typeof categorySchema>;
