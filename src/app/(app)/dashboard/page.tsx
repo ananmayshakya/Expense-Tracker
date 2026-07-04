@@ -5,8 +5,9 @@ import CategoryDonutChart, {
 import MonthlyTrendChart, {
   type MonthlyTotal,
 } from "@/components/charts/MonthlyTrendChart";
+import BudgetStatusCard from "@/components/BudgetStatusCard";
 import StatCard from "@/components/StatCard";
-import { decimalToNumber } from "@/lib/money";
+import { decimalToNumber, decimalToString } from "@/lib/money";
 import { formatMoney } from "@/lib/currency";
 import { requireSession } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -54,6 +55,7 @@ export default async function DashboardPage() {
     categoryTotalsRaw,
     categories,
     sixMonthExpenses,
+    overallBudgetThisMonth,
   ] = await Promise.all([
     // 1. Total spent + count this month.
     prisma.expense.aggregate({
@@ -84,6 +86,18 @@ export default async function DashboardPage() {
     prisma.expense.findMany({
       where: { userId, date: { gte: sixMonthsAgoStart, lt: nextMonthStart } },
       select: { amount: true, date: true },
+    }),
+    // Overall (categoryId: null) budget for the current month, scoped to
+    // the session user — this is the §9.4 "active budget status" the
+    // Phase 5 placeholder deferred to Phase 6.
+    prisma.budget.findFirst({
+      where: {
+        userId,
+        categoryId: null,
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+      },
+      select: { amount: true },
     }),
   ]);
 
@@ -151,6 +165,17 @@ export default async function DashboardPage() {
     total: decimalToNumber(b.total),
   }));
 
+  // ---- Budget status card: overall monthly budget vs. total spent this
+  // month. Comparison is done with Prisma.Decimal (.greaterThan), never
+  // floats; only the final display values are converted to strings.
+  const budgetStatus = overallBudgetThisMonth
+    ? {
+        amount: decimalToString(overallBudgetThisMonth.amount),
+        spent: decimalToString(totalThisMonth),
+        isOverBudget: totalThisMonth.greaterThan(overallBudgetThisMonth.amount),
+      }
+    : null;
+
   const currency = user.currency;
 
   return (
@@ -188,11 +213,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/*
-        Budget status will replace one of the cards above (or add a new
-        one) once Phase 6 lands real Budget rows — intentionally not
-        built here to avoid inventing budget logic ahead of schedule.
-      */}
+      <BudgetStatusCard currency={currency} budget={budgetStatus} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-[12px] bg-[#fffdf8] p-5 dark:bg-[#272341]">

@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 
 /**
  * Sidebar nav items (PLAN.md §16). Items whose pages exist are real links;
- * items for future phases (Budgets -> Phase 6, Reports -> not yet
- * specced beyond this, Settings -> Phase 8) are rendered visually but
- * inert (no href, `aria-disabled`, muted) so there are no dead 404 links.
+ * items for future phases (Reports -> not yet specced beyond this,
+ * Settings -> Phase 8) are rendered visually but inert (no href,
+ * `aria-disabled`, muted) so there are no dead 404 links. Budgets ->
+ * Phase 6, now wired to a real page.
  */
 type NavItem = {
   label: string;
@@ -52,8 +53,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Budgets",
-    href: null,
-    soon: true,
+    href: "/budgets",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="4" width="18" height="16" rx="2" />

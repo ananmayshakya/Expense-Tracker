@@ -109,6 +109,57 @@ export type ExpenseInput = z.infer<typeof expenseSchema>;
 export type ExpenseFormInput = z.input<typeof expenseSchema>;
 
 /**
+ * Shared schema for Budget create/edit (§9.5, §10 money discipline). Reused
+ * by the server actions in `src/actions/budgets.ts` and by the client form
+ * via @hookform/resolvers/zod. `amount` reuses the same range/precision
+ * rules as `expenseSchema` (> 0, at most 2 decimal places, <= Decimal(12,2)
+ * max). `categoryId` is `null` for the overall monthly budget.
+ */
+export const budgetSchema = z.object({
+  amount: z
+    .union([z.string(), z.number()])
+    .transform((val, ctx) => {
+      const num = typeof val === "string" ? Number(val.trim()) : val;
+      if (typeof val === "string" && val.trim() === "") {
+        ctx.addIssue({ code: "custom", message: "Amount is required." });
+        return z.NEVER;
+      }
+      if (!Number.isFinite(num)) {
+        ctx.addIssue({ code: "custom", message: "Amount must be a valid number." });
+        return z.NEVER;
+      }
+      return num;
+    })
+    .pipe(
+      z
+        .number()
+        .gt(0, { error: "Amount must be greater than zero." })
+        .max(MAX_AMOUNT, { error: "Amount is too large." })
+        .refine(
+          (num) => {
+            const [, decimals] = num.toString().split(".");
+            return !decimals || decimals.length <= 2;
+          },
+          { error: "Amount can have at most 2 decimal places." }
+        )
+    ),
+  month: z.coerce
+    .number()
+    .int({ error: "Month must be a whole number." })
+    .min(1, { error: "Month must be between 1 and 12." })
+    .max(12, { error: "Month must be between 1 and 12." }),
+  year: z.coerce
+    .number()
+    .int({ error: "Year must be a whole number." })
+    .min(2000, { error: "Year must be between 2000 and 2100." })
+    .max(2100, { error: "Year must be between 2000 and 2100." }),
+  categoryId: z.string().trim().min(1).nullable().optional(),
+});
+
+export type BudgetInput = z.infer<typeof budgetSchema>;
+export type BudgetFormInput = z.input<typeof budgetSchema>;
+
+/**
  * Filters + sort for the expenses list (§9.2). Parsed server-side from URL
  * search params so filtering/sorting is shareable and always applied via
  * Prisma `where`/`orderBy` — never trust the client to have already
