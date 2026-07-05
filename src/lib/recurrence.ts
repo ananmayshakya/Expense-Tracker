@@ -91,6 +91,49 @@ function addMonthsClamped(date: Date, months: number): Date {
  * years) while guaranteeing the loop can never run unbounded. */
 const MAX_CATCHUP_ITERATIONS = 5000;
 
+export type DueRunsResult = {
+  /** Every due run-date, in ascending order (empty if none are due yet). */
+  dueDates: Date[];
+  /** `nextRunDate` advanced past all due runs (== input if none were due). */
+  finalNextRunDate: Date;
+};
+
+/**
+ * Pure catch-up calculator (PLAN.md §11 item 4 — extracted from
+ * `processDueRecurring` in a behavior-preserving refactor so it can be
+ * unit-tested without a DB).
+ *
+ * Given a recurring row's `nextRunDate`/`frequency`, and the current time
+ * `now`, computes every due run-date (each `<= now`) and the resulting
+ * advanced `nextRunDate` (always `> now` once due dates exist, or unchanged
+ * if `nextRunDate` is already in the future). Mirrors the original inline
+ * loop exactly: same `cursor <= now` condition, same `advanceDate` calls,
+ * same `MAX_CATCHUP_ITERATIONS` cutoff (which stops accumulating further
+ * catch-up within this call — the row is simply picked up again, and
+ * continues catching up, on the next call).
+ */
+export function computeDueRuns(
+  nextRunDate: Date,
+  frequency: RecurrenceFrequency,
+  now: Date,
+  cap: number = MAX_CATCHUP_ITERATIONS
+): DueRunsResult {
+  let iterations = 0;
+  let cursor = nextRunDate;
+  const dueDates: Date[] = [];
+
+  while (cursor <= now) {
+    dueDates.push(cursor);
+    cursor = advanceDate(cursor, frequency);
+    iterations += 1;
+    if (iterations > cap) {
+      break;
+    }
+  }
+
+  return { dueDates, finalNextRunDate: cursor };
+}
+
 export type ProcessDueRecurringResult = {
   /** Total number of Expense rows created across all recurring definitions. */
   expensesCreated: number;
@@ -136,31 +179,15 @@ export async function processDueRecurring(userId: string): Promise<ProcessDueRec
   let rowsProcessed = 0;
 
   for (const row of dueRows) {
-    let iterations = 0;
-    let cursor = row.nextRunDate;
-    const duDates: Date[] = [];
+    const { dueDates, finalNextRunDate } = computeDueRuns(row.nextRunDate, row.frequency, now);
 
-    while (cursor <= now) {
-      duDates.push(cursor);
-      cursor = advanceDate(cursor, row.frequency);
-      iterations += 1;
-      if (iterations > MAX_CATCHUP_ITERATIONS) {
-        // Pathological input guard — stop catching up further in this call;
-        // the row will simply be picked up again (and continue catching up)
-        // on the next processDueRecurring invocation.
-        break;
-      }
-    }
-
-    if (duDates.length === 0) {
+    if (dueDates.length === 0) {
       continue;
     }
 
-    const finalNextRunDate = cursor;
-
     await prisma.$transaction(async (tx) => {
       await tx.expense.createMany({
-        data: duDates.map((runDate) => ({
+        data: dueDates.map((runDate) => ({
           amount: row.amount,
           description: row.description,
           date: runDate,
@@ -175,7 +202,7 @@ export async function processDueRecurring(userId: string): Promise<ProcessDueRec
       });
     });
 
-    expensesCreated += duDates.length;
+    expensesCreated += dueDates.length;
     rowsProcessed += 1;
   }
 

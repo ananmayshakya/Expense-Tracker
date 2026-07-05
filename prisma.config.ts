@@ -7,6 +7,13 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // Prisma 7 reads the seed command from here (NOT the legacy
+    // package.json "prisma".seed field, which Prisma 7 ignores — confirmed
+    // via `prisma db seed` erroring "No seed command configured" until this
+    // was added). package.json still carries a "prisma".seed entry too,
+    // matching PLAN.md §12's literal wiring instruction; it's inert under
+    // Prisma 7 but documents intent for anyone expecting the old convention.
+    seed: "tsx prisma/seed.ts",
   },
   datasource: {
     url: process.env["DATABASE_URL"],
