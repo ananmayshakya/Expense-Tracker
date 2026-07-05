@@ -21,26 +21,109 @@ recurring expenses — plus dashboards, charts, CSV export, and an admin panel.
 
 ## Features
 
-- **Auth & RBAC** — credentials-based login (hashed passwords), JWT sessions,
-  USER vs ADMIN roles enforced on every server action/route (never trusted
-  from the client).
-- **Expenses** — full CRUD with server-side filtering (category, date range,
-  text search) and sorting.
-- **Custom categories** — color-coded, per-user, with sensible defaults
-  seeded on registration.
-- **Dashboard** — spend summary cards and Recharts visualizations (category
-  breakdown + 6-month trend).
-- **Budgets** — overall and per-category monthly budgets with progress bars
-  and an over-budget warning.
-- **Recurring expenses** — auto-materializes due expenses on load (with
-  multi-period catch-up) plus a manual "Run now" action.
-- **CSV export** — download your filtered expense list; admins can export
-  any user's data.
-- **Admin panel** — view all users and change roles, with a guard against
-  ever removing the last admin, and hardened against stale-session privilege
-  (see Security notes below).
-- **Settings** — currency picker (formats every amount app-wide) and a
-  light/dark/system theme toggle that persists across devices.
+### Authentication & accounts
+- **Registration** — email/password sign-up with server-side validation.
+  Passwords are hashed with bcrypt (cost 12) and never returned to the client.
+- **Login / logout** via Auth.js v5 (Credentials provider, JWT session
+  strategy).
+- **Starter data** — new users are automatically seeded a set of default
+  categories so the app is usable immediately.
+- **Profile management** — change your display name and change your password
+  (the current password is required to set a new one).
+
+### Role-based access control (RBAC)
+- **Two roles — USER and ADMIN** — enforced on the **server** for every action
+  and route; roles/identity are never trusted from the client.
+- **Ownership enforcement** — every read or mutation of user-owned data checks
+  that the caller is the owner (or an admin) server-side.
+- **Route protection** — unauthenticated visitors are redirected to `/login`;
+  signed-in users hitting the auth pages are sent to the dashboard; the landing
+  page redirects based on auth state.
+
+### Expenses (core CRUD)
+- **Create / edit / delete** expenses (amount, description, date, category).
+- **Exact-decimal money** — amounts are stored and computed as fixed-point
+  decimals (no floating-point drift) and formatted in your chosen currency.
+- **Server-side filtering** — filter by multiple categories, a date range
+  (from/to), and free-text description search.
+- **Server-side sorting** — by date or amount, ascending or descending.
+- **Shareable views** — filters and sort live in the URL, so a filtered view
+  is bookmarkable and links straight to a matching CSV export.
+
+### Categories
+- **Full CRUD** of custom, per-user categories, each with a **color picker**;
+  colors are shown as chips on expenses, charts, and budgets.
+- **Default categories** seeded on registration (Food, Transport, Bills,
+  Entertainment, Shopping, Health, Other).
+- **Safe deletion** — deleting a category re-labels its expenses as
+  "Uncategorized" (history is preserved, not destroyed).
+- **Duplicate-name protection** per user, surfaced as a friendly inline error.
+
+### Dashboard
+- **Gradient summary cards** — total spent this month, number of expenses this
+  month, and a month-over-month change indicator.
+- **Budget status** — the current month's overall budget with a
+  spent-vs-budget progress bar (or a clear "no budget set" state).
+- **Spend-by-category donut chart** for the current month, colored per
+  category (with an "Uncategorized" slice).
+- **6-month spending trend** bar chart.
+- **Graceful empty states** everywhere there's no data yet.
+
+### Budgets
+- **Overall and/or per-category** monthly budgets.
+- **Progress bars** showing spent vs budget; the fill uses the category color
+  and **turns red when over budget**.
+- **Month/year selector** to review any period.
+- **Guards** against duplicate overall budgets for the same month.
+
+### Recurring expenses
+- **Define recurring items** — amount, description, category, frequency, next
+  run date, and an active toggle.
+- **Frequencies** — daily, weekly, monthly, yearly, with correct month-length
+  and leap-year handling.
+- **Auto-materialization** — due items turn into real expenses on dashboard
+  load, with **multi-period catch-up** for anything overdue (idempotent, so it
+  never double-charges).
+- **Manual "Run now"** button, plus an **active/inactive toggle** to pause a
+  series without deleting it.
+
+### CSV export
+- **Download** your expenses as a CSV that honors the **currently applied
+  filters** (so the file matches what's on screen).
+- Amounts formatted; dated filename (`expenses-YYYYMMDD.csv`).
+- **Injection-safe** — hardened against CSV/formula injection.
+- **Admins** can export any user's expenses (admin-gated).
+
+### Admin panel
+- **User table** — email, name, role, number of expenses, and join date.
+- **Role management** — promote/demote users between USER and ADMIN.
+- **Last-admin guard** — the system will never let the final admin be
+  demoted/removed (enforced atomically in a serializable transaction).
+- **Stale-session hardening** — admin status is re-checked against the database,
+  so a demoted admin can't keep acting on a still-valid token.
+- The **Admin** nav entry only appears for admins.
+
+### Settings & personalization
+- **Currency picker** (USD, EUR, GBP, JPY, INR, CAD, AUD, CNY, and more) —
+  changing it **reformats every amount app-wide instantly**, no re-login, with
+  correct symbols and decimal places per currency (e.g. JPY has no decimals).
+- **Theme toggle** — light / dark / system, **persisted to your account** so it
+  follows you across devices (and remembered locally between reloads).
+- Profile name and password management (see Accounts).
+
+### Design & UX
+- **"Tally" design system** — a fixed **dark sidebar that stays dark in both
+  light and dark mode**, gradient stat cards, rounded panels, and colored
+  category chips.
+- **Responsive** — the sidebar collapses to an off-canvas drawer (hamburger +
+  overlay) on mobile; desktop is unchanged.
+- **Accessible** switches/toggles with proper roles and labels, and inline
+  form validation errors.
+
+### Testing
+- **Vitest** unit suite covering the permission checks, currency formatting,
+  decimal money math (no drift), and the recurrence date logic (including
+  leap-year and multi-period catch-up).
 
 ## Tech stack
 

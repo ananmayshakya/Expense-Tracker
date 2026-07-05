@@ -49,5 +49,6 @@ next-env.d.ts
 /AGENTS.md
 /CLAUDE.md
 /NEW_SESSION_PROMPT.md
+/ARCHITECTURE.md
 /.claude/
 /.ai-backup/
