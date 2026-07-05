@@ -3,6 +3,7 @@ import Link from "next/link";
 import MobileSidebar from "@/components/MobileSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 import SidebarNav from "@/components/SidebarNav";
+import UserMenu from "@/components/UserMenu";
 import { requireSession } from "@/lib/permissions";
 
 /**
@@ -88,14 +89,7 @@ export default async function AppLayout({
 
           <div className="flex shrink-0 items-center gap-4">
             <ThemeToggle />
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-white"
-              style={{ background: "linear-gradient(135deg, #a855f7, #ec4899)" }}
-              title={displayName}
-              aria-label={`Signed in as ${displayName}`}
-            >
-              {initial}
-            </span>
+            <UserMenu displayName={displayName} email={user.email ?? ""} initial={initial} />
           </div>
         </header>
 

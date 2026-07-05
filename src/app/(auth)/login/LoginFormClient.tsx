@@ -26,7 +26,7 @@ export default function LoginFormClient({
           type="email"
           autoComplete="email"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
         />
         {state.fieldErrors?.email?.map((msg) => (
           <p key={msg} className="text-xs text-red-600 dark:text-red-400">
@@ -45,7 +45,7 @@ export default function LoginFormClient({
           type="password"
           autoComplete="current-password"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
         />
         {state.fieldErrors?.password?.map((msg) => (
           <p key={msg} className="text-xs text-red-600 dark:text-red-400">
