@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -48,6 +48,15 @@ function CategoryForm({
   const [pending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Unique per form instance (react's useId) so the create form and an
+  // open edit-row form never collide on `id` — previously both used the
+  // hardcoded ids "name"/"color", which is invalid HTML (duplicate IDs)
+  // and breaks `<label htmlFor>` association when both forms are mounted
+  // at once (Phase 3 a11y carryover, fixed Phase 11).
+  const instanceId = useId();
+  const nameId = `${instanceId}-name`;
+  const colorId = `${instanceId}-color`;
+
   const {
     register,
     handleSubmit,
@@ -88,13 +97,13 @@ function CategoryForm({
     <form onSubmit={submit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <label
-          htmlFor="name"
+          htmlFor={nameId}
           className="text-sm font-medium text-[#1c1a17] dark:text-white"
         >
           Name
         </label>
         <input
-          id="name"
+          id={nameId}
           type="text"
           maxLength={40}
           {...register("name")}
@@ -124,7 +133,7 @@ function CategoryForm({
             />
           ))}
           <input
-            id="color"
+            id={colorId}
             type="text"
             aria-label="Custom hex color"
             {...register("color")}
@@ -195,73 +204,75 @@ function CategoryRow({ category }: { category: Category }) {
   }
 
   return (
-    <li className="flex items-center justify-between gap-4 rounded-[12px] border border-[#e4ddcf] bg-[#fffdf8] p-4 dark:border-[#3a355a] dark:bg-[#272341]">
-      <div className="flex items-center gap-3">
-        <span
-          className="h-6 w-6 shrink-0 rounded-full"
-          style={{ backgroundColor: category.color }}
-          aria-hidden
-        />
-        <span className="font-medium text-[#1c1a17] dark:text-white">{category.name}</span>
-        {category.isDefault && (
-          <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs text-[#6f6a60] dark:bg-white/10 dark:text-[#9aa0b4]">
-            Default
-          </span>
-        )}
-      </div>
+    <li className="flex flex-col gap-2 rounded-[12px] border border-[#e4ddcf] bg-[#fffdf8] p-4 dark:border-[#3a355a] dark:bg-[#272341]">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span
+            className="h-6 w-6 shrink-0 rounded-full"
+            style={{ backgroundColor: category.color }}
+            aria-hidden
+          />
+          <span className="font-medium text-[#1c1a17] dark:text-white">{category.name}</span>
+          {category.isDefault && (
+            <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs text-[#6f6a60] dark:bg-white/10 dark:text-[#9aa0b4]">
+              Default
+            </span>
+          )}
+        </div>
 
-      <div className="flex items-center gap-2">
-        {confirmingDelete ? (
-          <>
-            <span className="text-sm text-[#6f6a60] dark:text-[#9aa0b4]">Delete?</span>
-            <button
-              type="button"
-              disabled={deletePending}
-              onClick={() => {
-                setDeleteError(null);
-                startDeleteTransition(async () => {
-                  const result = await deleteCategory(category.id);
-                  if (!result.ok) {
-                    setDeleteError(result.error);
-                    setConfirmingDelete(false);
-                  } else {
-                    router.refresh();
-                  }
-                });
-              }}
-              className="rounded-[8px] bg-[#ef4444] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-60"
-            >
-              {deletePending ? "Deleting..." : "Confirm"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              className="rounded-[8px] border border-[#e4ddcf] px-3 py-1.5 text-sm font-medium text-[#1c1a17] transition-colors hover:bg-black/5 dark:border-[#3a355a] dark:text-white dark:hover:bg-white/5"
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="rounded-[8px] border border-[#e4ddcf] px-3 py-1.5 text-sm font-medium text-[#1c1a17] transition-colors hover:bg-black/5 dark:border-[#3a355a] dark:text-white dark:hover:bg-white/5"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(true)}
-              className="rounded-[8px] border border-[#e4ddcf] px-3 py-1.5 text-sm font-medium text-[#ef4444] transition-colors hover:bg-[#ef4444]/10 dark:border-[#3a355a]"
-            >
-              Delete
-            </button>
-          </>
-        )}
+        <div className="flex items-center gap-2">
+          {confirmingDelete ? (
+            <>
+              <span className="text-sm text-[#6f6a60] dark:text-[#9aa0b4]">Delete?</span>
+              <button
+                type="button"
+                disabled={deletePending}
+                onClick={() => {
+                  setDeleteError(null);
+                  startDeleteTransition(async () => {
+                    const result = await deleteCategory(category.id);
+                    if (!result.ok) {
+                      setDeleteError(result.error);
+                      setConfirmingDelete(false);
+                    } else {
+                      router.refresh();
+                    }
+                  });
+                }}
+                className="rounded-[8px] bg-[#ef4444] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-60"
+              >
+                {deletePending ? "Deleting..." : "Confirm"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="rounded-[8px] border border-[#e4ddcf] px-3 py-1.5 text-sm font-medium text-[#1c1a17] transition-colors hover:bg-black/5 dark:border-[#3a355a] dark:text-white dark:hover:bg-white/5"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="rounded-[8px] border border-[#e4ddcf] px-3 py-1.5 text-sm font-medium text-[#1c1a17] transition-colors hover:bg-black/5 dark:border-[#3a355a] dark:text-white dark:hover:bg-white/5"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                className="rounded-[8px] border border-[#e4ddcf] px-3 py-1.5 text-sm font-medium text-[#ef4444] transition-colors hover:bg-[#ef4444]/10 dark:border-[#3a355a]"
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
       </div>
       {deleteError && (
-        <p className="absolute mt-8 text-xs text-[#ef4444]" role="alert">
+        <p className="text-xs text-[#ef4444]" role="alert">
           {deleteError}
         </p>
       )}

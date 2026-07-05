@@ -8,7 +8,11 @@ import { loginSchema } from "@/lib/validations";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  session: { strategy: "jwt" },
+  // NOTE: do NOT re-declare `session` here — `authConfig.session` (in
+  // auth.config.ts) carries `strategy: "jwt"` AND the §17-hardening
+  // `maxAge`. Re-declaring `session: { strategy: "jwt" }` on this object
+  // would overwrite (not merge with) the spread `authConfig.session` above,
+  // silently dropping `maxAge` back to NextAuth's 30-day default.
   providers: [
     Credentials({
       credentials: {

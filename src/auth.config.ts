@@ -39,6 +39,22 @@ export default {
   providers: [],
   session: {
     strategy: "jwt",
+    // §17 "JWT role/existence staleness" (hardened Phase 11): the JWT
+    // caches `role` at issuance and isn't re-checked against the DB on
+    // every request (requireSession/most reads). A demoted or deleted
+    // user's token still authenticates until it expires. NextAuth's
+    // default maxAge is 30 days, which is a long staleness window.
+    // Shortening it to 24h is defense-in-depth: it bounds how long a
+    // demoted/deleted account's old token stays valid, without requiring a
+    // DB round-trip per request. The admin surface additionally gets a
+    // hard, immediate DB re-check regardless of token age (see
+    // requireAdmin() in lib/permissions.ts) — this maxAge only helps the
+    // non-admin-surface residual risk that's otherwise left undefended.
+    // UX tradeoff: users are signed out and must log back in after 24h of
+    // token age (note: Auth.js also rolls the expiry forward on activity
+    // within that window by default, so active users aren't interrupted
+    // mid-session — only fully idle sessions expire at the 24h mark).
+    maxAge: 24 * 60 * 60,
   },
   callbacks: {
     // Injects id/role/currency/theme into the token. When `user` is present

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import MobileSidebar from "@/components/MobileSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 import SidebarNav from "@/components/SidebarNav";
 import { requireSession } from "@/lib/permissions";
@@ -33,6 +34,13 @@ function greetingForHour(hour: number): string {
  *   `dark:` variant (wired in globals.css via `@custom-variant dark`,
  *   driven by next-themes' `class` attribute on <html> — see
  *   src/components/Providers.tsx).
+ *
+ * Responsive (Phase 11 F): below `md` the 220px sidebar would otherwise
+ * crowd/overflow the content (confirmed at 375px width), so it's wrapped in
+ * `MobileSidebar` (a small client component) which slides it off-canvas by
+ * default on mobile with a hamburger toggle, and renders it exactly as
+ * before (fixed, always visible) at `md` and up. The main content's
+ * `ml-[220px]` similarly only applies at `md+` (`md:ml-[220px]`).
  */
 export default async function AppLayout({
   children,
@@ -47,9 +55,11 @@ export default async function AppLayout({
   const greeting = greetingForHour(new Date().getHours());
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar — hardcoded dark palette, unaffected by theme (§16). */}
-      <aside className="fixed inset-y-0 left-0 flex w-[220px] flex-col gap-8 bg-[#141322] py-6">
+    <div className="flex min-h-screen flex-col md:flex-row">
+      {/* Sidebar — hardcoded dark palette, unaffected by theme (§16).
+          MobileSidebar handles the off-canvas/slide-in behavior below `md`;
+          at `md+` it renders fixed and always visible, same as before. */}
+      <MobileSidebar>
         <Link href="/dashboard" className="flex items-center gap-2.5 px-4">
           <span
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-sm font-bold text-white"
@@ -62,11 +72,11 @@ export default async function AppLayout({
         </Link>
 
         <SidebarNav isAdmin={user.role === "ADMIN"} />
-      </aside>
+      </MobileSidebar>
 
       {/* Main area */}
-      <div className="ml-[220px] flex min-h-screen flex-1 flex-col bg-[#f4efe4] dark:bg-[#1b1930]">
-        <header className="flex items-center justify-between gap-4 px-8 py-6">
+      <div className="flex min-h-screen flex-1 flex-col bg-[#f4efe4] dark:bg-[#1b1930] md:ml-[220px]">
+        <header className="flex flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-8">
           <div>
             <h1 className="text-xl font-semibold text-[#1c1a17] dark:text-white">
               {greeting}, {displayName} 👋
@@ -89,7 +99,7 @@ export default async function AppLayout({
           </div>
         </header>
 
-        <main className="flex-1 px-8 pb-10">{children}</main>
+        <main className="flex-1 px-4 pb-10 sm:px-8">{children}</main>
       </div>
     </div>
   );
