@@ -11,6 +11,7 @@ import { decimalToNumber, decimalToString } from "@/lib/money";
 import { formatMoney } from "@/lib/currency";
 import { requireSession } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { processDueRecurring } from "@/lib/recurrence";
 
 const UNCATEGORIZED_COLOR = "#9ca3af";
 
@@ -40,6 +41,20 @@ export default async function DashboardPage() {
   const session = await requireSession();
   const { user } = session;
   const userId = user.id;
+
+  // §9.6 DECISION: materialize any due recurring expenses on dashboard
+  // load, scoped strictly to the session user (never client input). This
+  // must run BEFORE the month aggregates below so newly-materialized
+  // expenses are included in this render. Wrapped defensively: a failure
+  // here (e.g. a transient DB hiccup) should not blank the whole
+  // dashboard, but we deliberately do NOT swallow ForbiddenError/auth
+  // errors — processDueRecurring takes a trusted, already-verified userId
+  // and does not throw those, so this catch is only for infra failures.
+  try {
+    await processDueRecurring(userId);
+  } catch (error) {
+    console.error("processDueRecurring failed on dashboard load:", error);
+  }
 
   const now = new Date();
   const monthStart = startOfMonth(now.getFullYear(), now.getMonth());

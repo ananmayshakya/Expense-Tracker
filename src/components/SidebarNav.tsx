@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
  * items for future phases (Reports -> not yet specced beyond this,
  * Settings -> Phase 8) are rendered visually but inert (no href,
  * `aria-disabled`, muted) so there are no dead 404 links. Budgets ->
- * Phase 6, now wired to a real page.
+ * Phase 6, Recurring -> Phase 7, both now wired to real pages.
  */
 type NavItem = {
   label: string;
@@ -58,6 +58,18 @@ const NAV_ITEMS: NavItem[] = [
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="4" width="18" height="16" rx="2" />
         <path d="M3 9h18" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    label: "Recurring",
+    href: "/recurring",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M17 2.1 21 6l-4 3.9" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 12.6v-1.1a9 9 0 0 1 9-9h9" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M7 21.9 3 18l4-3.9" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M21 11.4v1.1a9 9 0 0 1-9 9H3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },

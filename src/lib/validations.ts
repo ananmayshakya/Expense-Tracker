@@ -165,6 +165,58 @@ export type BudgetFormInput = z.input<typeof budgetSchema>;
  * Prisma `where`/`orderBy` — never trust the client to have already
  * filtered anything.
  */
+/**
+ * Shared schema for RecurringExpense create/edit (§9.6, §10 money
+ * discipline). Reused by the server actions in `src/actions/recurring.ts`
+ * and by the client form via @hookform/resolvers/zod. `amount` reuses the
+ * same range/precision rules as `expenseSchema`/`budgetSchema` (> 0, at
+ * most 2 decimal places, <= Decimal(12,2) max). `categoryId` is `null` for
+ * "no category".
+ */
+export const recurringSchema = z.object({
+  amount: z
+    .union([z.string(), z.number()])
+    .transform((val, ctx) => {
+      const num = typeof val === "string" ? Number(val.trim()) : val;
+      if (typeof val === "string" && val.trim() === "") {
+        ctx.addIssue({ code: "custom", message: "Amount is required." });
+        return z.NEVER;
+      }
+      if (!Number.isFinite(num)) {
+        ctx.addIssue({ code: "custom", message: "Amount must be a valid number." });
+        return z.NEVER;
+      }
+      return num;
+    })
+    .pipe(
+      z
+        .number()
+        .gt(0, { error: "Amount must be greater than zero." })
+        .max(MAX_AMOUNT, { error: "Amount is too large." })
+        .refine(
+          (num) => {
+            const [, decimals] = num.toString().split(".");
+            return !decimals || decimals.length <= 2;
+          },
+          { error: "Amount can have at most 2 decimal places." }
+        )
+    ),
+  description: z
+    .string()
+    .trim()
+    .min(1, { error: "Description is required." })
+    .max(200, { error: "Description must be 200 characters or fewer." }),
+  frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"], {
+    error: "Please select a valid frequency.",
+  }),
+  nextRunDate: z.coerce.date({ error: "Please enter a valid date." }),
+  active: z.boolean().default(true),
+  categoryId: z.string().trim().min(1).nullable().optional(),
+});
+
+export type RecurringInput = z.infer<typeof recurringSchema>;
+export type RecurringFormInput = z.input<typeof recurringSchema>;
+
 export const expenseFilterSchema = z.object({
   categoryIds: z.array(z.string()).optional(),
   dateFrom: z.coerce.date().optional(),
