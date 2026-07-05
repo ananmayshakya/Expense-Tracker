@@ -50,5 +50,6 @@ next-env.d.ts
 /CLAUDE.md
 /NEW_SESSION_PROMPT.md
 /ARCHITECTURE.md
+/handoff.md
 /.claude/
 /.ai-backup/
