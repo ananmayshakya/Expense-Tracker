@@ -61,7 +61,7 @@ export default async function AppLayout({
           <span className="text-lg font-semibold text-white">Tally</span>
         </Link>
 
-        <SidebarNav />
+        <SidebarNav isAdmin={user.role === "ADMIN"} />
       </aside>
 
       {/* Main area */}

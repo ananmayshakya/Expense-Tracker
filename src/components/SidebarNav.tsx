@@ -9,6 +9,14 @@ import { usePathname } from "next/navigation";
  * Settings -> Phase 8) are rendered visually but inert (no href,
  * `aria-disabled`, muted) so there are no dead 404 links. Budgets ->
  * Phase 6, Recurring -> Phase 7, both now wired to real pages.
+ *
+ * Admin (Phase 10): shown ONLY when the server-rendered parent
+ * ((app)/layout.tsx) passes `isAdmin`, derived from `session.user.role`
+ * server-side. This is a UI convenience only — hiding the link does NOT
+ * substitute for the real enforcement, which lives server-side in
+ * `(app)/admin/page.tsx` (requireAdmin()) and `actions/admin.ts`
+ * (requireAdmin() first). A USER who guesses the /admin URL is still
+ * redirected server-side regardless of whether this link is visible.
  */
 type NavItem = {
   label: string;
@@ -95,12 +103,24 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export default function SidebarNav() {
+const ADMIN_NAV_ITEM: NavItem = {
+  label: "Admin",
+  href: "/admin",
+  icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+};
+
+export default function SidebarNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
 
   return (
     <nav className="flex flex-col gap-1 px-3">
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const active = item.href != null && pathname.startsWith(item.href);
 
         if (!item.href) {
