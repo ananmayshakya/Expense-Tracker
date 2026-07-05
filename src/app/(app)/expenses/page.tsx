@@ -1,12 +1,9 @@
-import type { Prisma } from "@/generated/prisma/client";
+import { buildExpenseQuery, parseExpenseFilters, type SearchParams } from "@/lib/expense-query";
 import { decimalToString } from "@/lib/money";
 import { requireSession } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { expenseFilterSchema } from "@/lib/validations";
 
 import ExpensesClient from "./ExpensesClient";
-
-type SearchParams = { [key: string]: string | string[] | undefined };
 
 /**
  * Expenses page (§9.2). Server Component: loads ONLY the current user's
@@ -28,40 +25,16 @@ export default async function ExpensesPage({
   const session = await requireSession();
   const rawParams = await searchParams;
 
-  const filters = expenseFilterSchema.parse({
-    categoryIds: toArray(rawParams.categoryIds),
-    dateFrom: emptyToUndefined(firstValue(rawParams.dateFrom)),
-    dateTo: emptyToUndefined(firstValue(rawParams.dateTo)),
-    search: emptyToUndefined(firstValue(rawParams.search)),
-    sortBy: emptyToUndefined(firstValue(rawParams.sortBy)) ?? "date",
-    sortDir: emptyToUndefined(firstValue(rawParams.sortDir)) ?? "desc",
-  });
+  const filters = parseExpenseFilters(rawParams);
 
   // Every clause is scoped to the session user — client-supplied filter
   // params can only narrow this `where`, never widen it to other users.
-  const where: Prisma.ExpenseWhereInput = {
-    userId: session.user.id,
-  };
-
-  if (filters.categoryIds && filters.categoryIds.length > 0) {
-    where.categoryId = { in: filters.categoryIds };
-  }
-
-  if (filters.dateFrom || filters.dateTo) {
-    where.date = {
-      ...(filters.dateFrom ? { gte: filters.dateFrom } : {}),
-      ...(filters.dateTo ? { lte: filters.dateTo } : {}),
-    };
-  }
-
-  if (filters.search) {
-    where.description = { contains: filters.search, mode: "insensitive" };
-  }
+  const { where, orderBy } = buildExpenseQuery(session.user.id, filters);
 
   const [expenses, categories] = await Promise.all([
     prisma.expense.findMany({
       where,
-      orderBy: { [filters.sortBy]: filters.sortDir },
+      orderBy,
       select: {
         id: true,
         amount: true,
@@ -115,21 +88,6 @@ export default async function ExpensesPage({
       />
     </div>
   );
-}
-
-function firstValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function toArray(value: string | string[] | undefined): string[] | undefined {
-  if (value === undefined) return undefined;
-  const arr = Array.isArray(value) ? value : [value];
-  const filtered = arr.filter((v) => v.length > 0);
-  return filtered.length > 0 ? filtered : undefined;
-}
-
-function emptyToUndefined(value: string | undefined): string | undefined {
-  return value === undefined || value === "" ? undefined : value;
 }
 
 function toDateInputValue(date: Date): string {

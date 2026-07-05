@@ -322,6 +322,7 @@ function ExpenseRow({ expense, categories, currency }: {
 function FilterBar({ categories, filters }: { categories: Category[]; filters: Filters }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const exportHref = `/api/expenses/export?${searchParams.toString()}`;
 
   function updateParams(next: Partial<Record<string, string | string[] | undefined>>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -416,6 +417,10 @@ function FilterBar({ categories, filters }: { categories: Category[]; filters: F
             Clear filters
           </button>
         )}
+
+        <a href={exportHref} className={`${buttonSecondary} self-end`}>
+          Export CSV
+        </a>
       </div>
 
       {categories.length > 0 && (
