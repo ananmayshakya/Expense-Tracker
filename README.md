@@ -5,6 +5,11 @@ authentication, role-based access control enforced server-side, database
 persistence, and full CRUD across expenses, categories, budgets, and
 recurring expenses — plus dashboards, charts, CSV export, and an admin panel.
 
+**🔗 Live demo:** [TODO: add deployed URL] — sign in with a [demo account](#demo-accounts-seeded)
+below. This is a public demo: anyone can sign in with the demo accounts (or
+register their own), so seeded data may be edited or deleted by other
+visitors from time to time.
+
 ## Screenshots
 
 > Screenshots live in `docs/screenshots/`. Run the app (`npm run dev`, then
@@ -211,6 +216,69 @@ npm run db:studio  # Prisma Studio (browse the DB)
 npm test           # vitest (watch mode)
 npm run test:run   # vitest run (single pass, used in CI-style checks)
 npm run lint       # eslint
+```
+
+## Deploy
+
+Tally deploys for free on **Vercel** (Hobby plan) with a hosted **Neon**
+Postgres database (Neon's free tier + Vercel's serverless model pair well —
+Neon pools connections, which matters when every request is a short-lived
+serverless function).
+
+### 1. Create a Neon Postgres database
+
+Sign up at [neon.tech](https://neon.tech) (free) and create a project. Neon
+gives you two connection strings for it — copy both:
+
+- **Pooled** (hostname contains `-pooler`) — used by the deployed app.
+- **Direct** (no pooler) — used only for one-off admin tasks (migrations,
+  seeding), since pooled/transaction-mode connections aren't reliable for DDL.
+
+### 2. Import the repo into Vercel
+
+[New Project → Import Git Repository](https://vercel.com/new) and select this
+repo. Vercel auto-detects Next.js; no build config changes are needed.
+
+### 3. Set environment variables (in the Vercel project settings)
+
+| Variable          | Value                                                              |
+|--------------------|--------------------------------------------------------------------|
+| `DATABASE_URL`     | Neon's **pooled** connection string, with `?sslmode=require` (add `&pgbouncer=true&connection_limit=1` too if Prisma reports prepared-statement errors through the pooler) |
+| `AUTH_SECRET`      | A fresh secret — generate with `npx auth secret` (don't reuse a local dev secret) |
+| `AUTH_TRUST_HOST`  | `true`                                                              |
+
+(`AUTH_URL` doesn't need to be set — Auth.js infers it on Vercel from request
+headers. Only add it if callback URLs misbehave.)
+
+### 4. Initialize the database (one-time, run from your machine against Neon)
+
+Point `DATABASE_URL` at Neon's **direct** (non-pooled) string for these two
+commands only:
+
+```bash
+DATABASE_URL="<neon-direct-connection-string>" npx prisma migrate deploy
+DATABASE_URL="<neon-direct-connection-string>" npm run db:seed
+```
+
+`npm install` already wires a `postinstall` hook that runs `prisma generate`,
+so Vercel's build handles that automatically — no extra build config needed.
+
+### 5. Deploy and verify
+
+Vercel deploys on import (and on every push to `main` afterward). Once live,
+sign in with both [demo accounts](#demo-accounts-seeded) and check the
+dashboard, charts, filters, CSV export, and dark-mode toggle.
+
+### Resetting the demo data
+
+Because the demo logins are public, visitors can edit or delete the seeded
+data over time. The seed script is safe to re-run whenever you want to
+restore it — it's scoped strictly to the two demo accounts (upserts the
+users, wipes and recreates only their expenses/categories/budgets/recurring
+rows) and never touches any other user's data:
+
+```bash
+DATABASE_URL="<neon-direct-connection-string>" npm run db:seed
 ```
 
 ## Security notes
