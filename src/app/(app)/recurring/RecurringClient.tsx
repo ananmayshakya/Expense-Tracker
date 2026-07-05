@@ -284,13 +284,13 @@ function ActiveToggle({ id, active }: { id: string; active: boolean }) {
         aria-label={active ? "Deactivate" : "Activate"}
         disabled={pending}
         onClick={toggle}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-60 ${
-          active ? "bg-[#22c55e]" : "bg-black/15 dark:bg-white/15"
+        className={`relative h-6 w-11 shrink-0 rounded-full p-0 transition-colors disabled:opacity-60 ${
+          active ? "bg-[#22c55e]" : "bg-[#d1d5db] dark:bg-[#3a355a]"
         }`}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-            active ? "translate-x-5" : "translate-x-0.5"
+          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            active ? "translate-x-5" : "translate-x-0"
           }`}
         />
       </button>
