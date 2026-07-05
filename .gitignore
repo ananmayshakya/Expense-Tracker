@@ -42,3 +42,12 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# AI / planning + local tooling files — kept locally, never published
+/PLAN.md
+/rules.md
+/AGENTS.md
+/CLAUDE.md
+/NEW_SESSION_PROMPT.md
+/.claude/
+/.ai-backup/

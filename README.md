@@ -5,6 +5,20 @@ authentication, role-based access control enforced server-side, database
 persistence, and full CRUD across expenses, categories, budgets, and
 recurring expenses — plus dashboards, charts, CSV export, and an admin panel.
 
+## Screenshots
+
+> Screenshots live in `docs/screenshots/`. Run the app (`npm run dev`, then
+> sign in with a demo account below) and drop your own captures in using the
+> filenames referenced here to populate this section.
+
+| Dashboard | Transactions |
+| --- | --- |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Transactions](docs/screenshots/transactions.png) |
+
+| Budgets | Dark mode |
+| --- | --- |
+| ![Budgets](docs/screenshots/budgets.png) | ![Dark mode](docs/screenshots/dark-mode.png) |
+
 ## Features
 
 - **Auth & RBAC** — credentials-based login (hashed passwords), JWT sessions,
