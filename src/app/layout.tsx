@@ -60,7 +60,9 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Providers defaultTheme={defaultTheme}>{children}</Providers>
+        <Providers defaultTheme={defaultTheme} session={session}>
+          {children}
+        </Providers>
       </body>
     </html>
   );
