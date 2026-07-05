@@ -34,6 +34,20 @@ export const SUPPORTED_CURRENCY_CODES = SUPPORTED_CURRENCIES.map((c) => c.code);
  * Decimal) as money in the given ISO 4217 currency code. Symbol and decimal
  * digit count come from `Intl.NumberFormat`, never hardcoded, so e.g. JPY
  * renders with 0 decimals and USD/EUR with 2.
+ *
+ * Locale is pinned to "en-US" rather than `undefined` (the runtime default).
+ * This was originally noted as a Phase 4/§17 risk ("server vs client locale
+ * divergence could cause hydration mismatches") and it surfaced for real in
+ * Phase 8: switching currency to JPY rendered "¥1,234" during SSR but
+ * "JP¥1,234" on the client for the exact same `Intl.NumberFormat(undefined,
+ * ...)` call, because the Node process's default locale and the browser's
+ * default locale resolved differently for the same currency code. Pinning
+ * the locale (mirroring the existing `en-US` pin for expense date labels in
+ * ExpensesClient.tsx/RecurringClient.tsx) makes SSR and client output
+ * identical, closing that risk. This intentionally means all users see
+ * en-US-style grouping/symbol placement regardless of browser locale —
+ * consistent with the existing date-label precedent, and acceptable since
+ * this is a portfolio app with a single display locale, not per-user i18n.
  */
 export function formatMoney(amount: number | string, currencyCode: string): string {
   const numeric = typeof amount === "string" ? Number(amount) : amount;
@@ -41,7 +55,7 @@ export function formatMoney(amount: number | string, currencyCode: string): stri
     throw new Error(`formatMoney: amount is not a finite number (${amount})`);
   }
 
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currencyCode,
   }).format(numeric);

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { SUPPORTED_CURRENCY_CODES } from "@/lib/currency";
+
 /**
  * Shared Zod schemas — the trust boundary for auth-related input.
  * These are reused by the register API route and by client-side forms.
@@ -227,3 +229,48 @@ export const expenseFilterSchema = z.object({
 });
 
 export type ExpenseFilterInput = z.infer<typeof expenseFilterSchema>;
+
+/**
+ * Settings schemas (§9.9, Phase 8). Every action in `src/actions/settings.ts`
+ * validates with one of these before touching the DB, and — for
+ * currency/theme — the SAME allowlist values are reused by the `jwt`
+ * callback's `trigger === "update"` handler in `src/auth.config.ts` so the
+ * client-triggered session refresh can't smuggle in anything else (esp.
+ * never `role`).
+ */
+
+export const updateProfileSchema = z.object({
+  // Trimmed; empty string means "clear the name" (stored as null).
+  name: z
+    .string()
+    .trim()
+    .max(100, { error: "Name must be 100 characters or fewer." })
+    .optional()
+    .or(z.literal("")),
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const updatePasswordSchema = z.object({
+  currentPassword: z.string().min(1, { error: "Current password is required." }),
+  newPassword: passwordSchema,
+});
+
+export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
+
+export const updateCurrencySchema = z.object({
+  currency: z.enum(SUPPORTED_CURRENCY_CODES as [string, ...string[]], {
+    error: "Please choose a supported currency.",
+  }),
+});
+
+export type UpdateCurrencyInput = z.infer<typeof updateCurrencySchema>;
+
+export const THEME_VALUES = ["light", "dark", "system"] as const;
+export type ThemeValue = (typeof THEME_VALUES)[number];
+
+export const updateThemeSchema = z.object({
+  theme: z.enum(THEME_VALUES, { error: "Please choose a valid theme." }),
+});
+
+export type UpdateThemeInput = z.infer<typeof updateThemeSchema>;

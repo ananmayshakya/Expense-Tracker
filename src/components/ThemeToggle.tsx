@@ -1,7 +1,11 @@
 "use client";
 
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+
+import { updateTheme } from "@/actions/settings";
 
 /**
  * Theme toggle (PLAN.md §16 — corrected spec).
@@ -22,14 +26,25 @@ import { useTheme } from "next-themes";
  * `resolvedTheme` (not `theme`) drives the switch's on/off visual state so
  * `theme === "system"` still shows the correct effective state.
  *
- * NOTE (Phase 8 TODO): this only persists via next-themes' own localStorage
- * mechanism. Phase 8 adds the settings `updateTheme` server action, which
- * will also write the choice to `User.theme` so it follows the user across
- * devices/sessions.
+ * Phase 8: toggling now does three things, in order:
+ *  1. `setTheme` (next-themes) — instant visual change + localStorage, same
+ *     as before.
+ *  2. `updateTheme` server action — persists to `User.theme` (DB) so the
+ *     preference follows the user to a fresh device/session (§16).
+ *  3. `useSession().update({ theme })` — refreshes the JWT via the
+ *     `trigger === "update"` branch of the `jwt` callback in
+ *     `src/auth.config.ts` (allowlisted to theme/currency/name only), then
+ *     `router.refresh()` so Server Components (e.g. the root layout's
+ *     `defaultTheme` seed) see the new session without a re-login.
+ * Toggling explicitly only ever sets "light" or "dark" (never "system") —
+ * matching the prior behavior; "system" is chosen via the Settings page
+ * theme selector, not this pill.
  */
 export default function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
+  const { update } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -48,13 +63,23 @@ export default function ThemeToggle() {
 
   const isDark = resolvedTheme === "dark";
 
+  async function handleToggle() {
+    const next = isDark ? "light" : "dark";
+    setTheme(next);
+    await updateTheme({ theme: next });
+    await update({ theme: next });
+    router.refresh();
+  }
+
   return (
     <button
       type="button"
       role="switch"
       aria-checked={isDark}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={() => {
+        void handleToggle();
+      }}
       className="relative inline-flex h-[30px] w-[60px] shrink-0 items-center rounded-full transition-colors duration-200"
       style={{ backgroundColor: isDark ? "#3a355a" : "#fbbf24" }}
     >
