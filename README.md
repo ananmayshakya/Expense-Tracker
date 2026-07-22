@@ -5,24 +5,27 @@ authentication, role-based access control enforced server-side, database
 persistence, and full CRUD across expenses, categories, budgets, and
 recurring expenses — plus dashboards, charts, CSV export, and an admin panel.
 
-**🔗 Live demo:** [TODO: add deployed URL] — sign in with a [demo account](#demo-accounts-seeded)
+**🔗 Live demo:** [expense-tracker-ananmaya.vercel.app](https://expense-tracker-ananmaya.vercel.app/) — sign in with a [demo account](#demo-accounts-seeded)
 below. This is a public demo: anyone can sign in with the demo accounts (or
 register their own), so seeded data may be edited or deleted by other
 visitors from time to time.
 
 ## Screenshots
 
-> Screenshots live in `docs/screenshots/`. Run the app (`npm run dev`, then
-> sign in with a demo account below) and drop your own captures in using the
-> filenames referenced here to populate this section.
+> Screenshots live in `docs/screenshots/`. Every page below has a light and
+> dark mode capture — the toggle in the header is fully themed throughout.
 
-| Dashboard | Transactions |
-| --- | --- |
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Transactions](docs/screenshots/transactions.png) |
+| | Light | Dark |
+| --- | --- | --- |
+| **Dashboard** | ![Dashboard light](docs/screenshots/dashboard-light.png) | ![Dashboard dark](docs/screenshots/dashboard-dark.png) |
+| **Transactions** | ![Transactions light](docs/screenshots/transactions-light.png) | ![Transactions dark](docs/screenshots/transactions-dark.png) |
+| **Categories** | ![Categories light](docs/screenshots/categories-light.png) | ![Categories dark](docs/screenshots/categories-dark.png) |
+| **Budgets** | ![Budgets light](docs/screenshots/budgets-light.png) | ![Budgets dark](docs/screenshots/budgets-dark.png) |
+| **Recurring** | ![Recurring light](docs/screenshots/recurring-light.png) | ![Recurring dark](docs/screenshots/recurring-dark.png) |
 
-| Budgets | Dark mode |
-| --- | --- |
-| ![Budgets](docs/screenshots/budgets.png) | ![Dark mode](docs/screenshots/dark-mode.png) |
+| Sign in |
+| --- |
+| ![Sign in](docs/screenshots/login.png) |
 
 ## Features
 
